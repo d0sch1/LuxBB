@@ -4,15 +4,25 @@ set -euo pipefail
 
 FORUM_DIR="/home/d0sch1/forum"
 BACKUP_DIR="${FORUM_DIR}/backups"
-# Separate physical disk (sdb1) — survives a failure of the root disk.
+# Intended to be a separate physical disk that survives root-disk failure.
+# NOTE: the original 1TB disk died and was removed (2026-07-23); /mnt/data is
+# currently NOT a real mount, so off-host mirroring is disabled until a new
+# backup target is attached. The local copy under BACKUP_DIR always runs.
 OFFHOST_DIR="/mnt/data/forum-backups"
+if findmnt -n -o SOURCE /mnt/data >/dev/null 2>&1 \
+   && [ "$(findmnt -n -o SOURCE /mnt/data)" != "$(findmnt -n -o SOURCE /)" ]; then
+    OFFHOST_READY=1
+else
+    OFFHOST_READY=0
+    echo "WARN: /mnt/data is not a separate mount — skipping off-host mirror." >&2
+fi
 # Real docker volume name (compose prefixes the project name "forum_" onto "forum-memes").
 MEME_VOLUME="forum_forum-memes"
-DB_CONTAINER="forum-db"
+DB_CONTAINER="0d39f89e2adc_forum-db"
 RETENTION_DAYS=14
 
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-mkdir -p "$BACKUP_DIR" "$OFFHOST_DIR"
+mkdir -p "$BACKUP_DIR"
 cd "$FORUM_DIR"
 
 DB_PASS=$(cat secrets/db_password.txt)
@@ -41,16 +51,20 @@ tar czf "$SRC_TAR" -C "$FORUM_DIR" --exclude='src/.git' src
 chmod 600 "$SRC_TAR"
 
 # 5) Mirror everything to the off-host disk (separate physical device)
-cp -a "$DUMP" "$BACKUP_DIR"/db_*.txt "$MEMES_TAR" "$SRC_TAR" "$OFFHOST_DIR"/
+if [ "${OFFHOST_READY:-0}" = "1" ]; then
+    mkdir -p "$OFFHOST_DIR"
+    cp -a "$DUMP" "$BACKUP_DIR"/db_*.txt "$MEMES_TAR" "$SRC_TAR" "$OFFHOST_DIR"/
+    find "$OFFHOST_DIR" -name 'fluxbb-*.sql.gz'        -mtime +${RETENTION_DAYS} -delete
+    find "$OFFHOST_DIR" -name 'db_*.txt'               -mtime +${RETENTION_DAYS} -delete
+    find "$OFFHOST_DIR" -name 'forum-memes-*.tar.gz'   -mtime +${RETENTION_DAYS} -delete
+    find "$OFFHOST_DIR" -name 'forum-src-*.tar.gz'     -mtime +${RETENTION_DAYS} -delete
+    echo "backup done $(date) (db+secrets+memes+src; mirrored to ${OFFHOST_DIR})"
+else
+    echo "backup done $(date) (db+secrets+memes+src; LOCAL ONLY — no off-host mirror)"
+fi
 
-# 6) Retention
+# 6) Retention (local)
 find "$BACKUP_DIR" -name 'fluxbb-*.sql.gz'        -mtime +${RETENTION_DAYS} -delete
 find "$BACKUP_DIR" -name 'db_*.txt'               -mtime +${RETENTION_DAYS} -delete
 find "$BACKUP_DIR" -name 'forum-memes-*.tar.gz'   -mtime +${RETENTION_DAYS} -delete
 find "$BACKUP_DIR" -name 'forum-src-*.tar.gz'     -mtime +${RETENTION_DAYS} -delete
-find "$OFFHOST_DIR" -name 'fluxbb-*.sql.gz'       -mtime +${RETENTION_DAYS} -delete
-find "$OFFHOST_DIR" -name 'db_*.txt'              -mtime +${RETENTION_DAYS} -delete
-find "$OFFHOST_DIR" -name 'forum-memes-*.tar.gz'  -mtime +${RETENTION_DAYS} -delete
-find "$OFFHOST_DIR" -name 'forum-src-*.tar.gz'    -mtime +${RETENTION_DAYS} -delete
-
-echo "backup done $(date) (db+secrets+memes+src; mirrored to ${OFFHOST_DIR})"
