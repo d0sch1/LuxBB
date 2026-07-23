@@ -2,6 +2,8 @@
 secrets/
 tokens/
 backups/
+db_password*
+cookie_seed*
 *.sql.gz
 db_*.txt
 
