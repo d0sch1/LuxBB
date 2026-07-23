@@ -1,0 +1,15 @@
+# Defense-in-depth: never execute PHP in the avatar upload directory.
+# Even if a malicious file lands here, it cannot be run as a script.
+<IfModule mod_proxy.c>
+    RewriteEngine Off
+</IfModule>
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .pht
+RemoveType .php .phtml .php3 .php4 .php5 .php7 .pht
+php_flag engine off
+AddType text/plain .php .phtml .php3 .php4 .php5 .php7 .pht

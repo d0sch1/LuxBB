@@ -1,0 +1,25 @@
+# Secrets & credentials — never commit
+secrets/
+tokens/
+backups/
+*.sql.gz
+db_*.txt
+
+# Local infrastructure (tunnel URLs, domains, logs) — keep local only
+caddy-docker-compose.yml
+cloudflared-config.yml
+cloudflared-quick.log
+cloudflared-*.log
+forum-tunnel.sh
+
+# FluxBB install/runtime artifacts (never commit a configured one)
+src/install.php
+src/config.php
+
+# Logs / temp
+*.log
+.cache/
+
+# OS / editor noise
+.DS_Store
+*.swp

@@ -1,0 +1,77 @@
+services:
+  db:
+    image: mariadb:10.11
+    container_name: forum-db
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "--silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    environment:
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
+      MYSQL_DATABASE: fluxbb
+      MYSQL_USER: fluxbb
+      MYSQL_PASSWORD_FILE: /run/secrets/db_password
+    volumes:
+      - db-data:/var/lib/mysql
+    networks:
+      - forum-net
+    secrets:
+      - db_root_password
+      - db_password
+
+  forum:
+    build: .
+    container_name: forum
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      # config.php is built at runtime by the entrypoint, so the forum needs a
+      # few seconds after boot before it answers. start_period covers that.
+      test: ["CMD", "curl", "-f", "-s", "http://localhost:80/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    # Bound to localhost only. TLS is terminated by the Caddy reverse proxy
+    # (caddy-docker-compose.yml, ports 80/443) which proxies http://forum:80
+    # on the internal forum-net. Until Caddy is live with a real domain,
+    # the forum is NOT reachable from the internet — only via localhost.
+    # Bound to the LAN interface only (not 0.0.0.0), so it's reachable from
+    # other devices on the local network (192.168.178.129:8081) but NOT from
+    # the host's public IP. TLS via the Caddy proxy is still the end goal.
+    ports:
+      - "192.168.178.129:8081:80"
+    volumes:
+      - forum-images:/var/www/html/img/avatars
+      - forum-memes:/var/www/html/img/memes
+      - forum-cache:/var/www/html/cache
+    secrets:
+      - db_password
+      - cookie_seed
+    environment:
+      DB_PASSWORD_FILE: /run/secrets/db_password
+      COOKIE_SEED_FILE: /run/secrets/cookie_seed
+    networks:
+      - forum-net
+
+secrets:
+  db_root_password:
+    file: ./secrets/db_root_password.txt
+  db_password:
+    file: ./secrets/db_password.txt
+  cookie_seed:
+    file: ./secrets/cookie_seed.txt
+
+volumes:
+  db-data:
+  forum-images:
+  forum-memes:
+  forum-cache:
+
+networks:
+  forum-net:
