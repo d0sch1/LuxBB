@@ -15,7 +15,7 @@ cloudflared-*.log
 forum-tunnel.sh
 
 # FluxBB install/runtime artifacts (never commit a configured one)
-src/install.php
+install.php
 src/config.php
 
 # Logs / temp
