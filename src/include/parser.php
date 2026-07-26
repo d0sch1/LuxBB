@@ -889,17 +889,22 @@ function do_bbcode($text, $is_signature = false)
 
 	if (($is_signature && $pun_config['p_sig_img_tag'] == '1') || (!$is_signature && $pun_config['p_message_img_tag'] == '1'))
 	{
-		$pattern_callback[] = '%\[img\]((ht|f)tps?://)([^\s<"]*?)\[/img\]%';
-		$pattern_callback[] = '%\[img=([^\[]*?)\]((ht|f)tps?://)([^\s<"]*?)\[/img\]%';
+		// Absolute http(s) URLs AND relative paths (uploaded memes like
+		// "img/memes/xxx.jpg"). Group 1 captures the scheme (incl. "://")
+		// or is empty for relative paths; the scheme is kept so absolute
+		// URLs stay absolute and relative paths stay relative (working
+		// behind the proxy and satisfying CSP img-src 'self').
+		$pattern_callback[] = '%\[img\]((?:ht|f)tps?://)?([^\s<"]*?)\[/img\]%';
+		$pattern_callback[] = '%\[img=([^\[]*?)\]((?:ht|f)tps?://)?([^\s<"]*?)\[/img\]%';
 		if ($is_signature)
 		{
-			$replace_callback[] = 'handle_img_tag($matches[1].$matches[3], true)';
-			$replace_callback[] = 'handle_img_tag($matches[2].$matches[4], true, $matches[1])';
+			$replace_callback[] = 'handle_img_tag($matches[1].$matches[2], true)';
+			$replace_callback[] = 'handle_img_tag($matches[2].$matches[3], true, $matches[1])';
 		}
 		else
 		{
-			$replace_callback[] = 'handle_img_tag($matches[1].$matches[3], false)';
-			$replace_callback[] = 'handle_img_tag($matches[2].$matches[4], false, $matches[1])';
+			$replace_callback[] = 'handle_img_tag($matches[1].$matches[2], false)';
+			$replace_callback[] = 'handle_img_tag($matches[2].$matches[3], false, $matches[1])';
 		}
 	}
 
