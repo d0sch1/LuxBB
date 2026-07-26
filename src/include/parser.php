@@ -812,6 +812,87 @@ JS;
 
 
 //
+// Turns a YouTube playlist URL (or bare PL… id) from the
+// [youtube-playlist] tag into a responsive click-to-load placeholder.
+// Only a strict playlist id is accepted, so no HTML/JS can be injected.
+// The real player (looping 24/7) is created client-side on click — see
+// youtube_playlist_js().
+//
+function handle_playlist_tag($token)
+{
+	$token = pun_trim($token);
+
+	$pl_id = '';
+
+	// Bare playlist id like PLxxxxxxxx, UUxxxxxxxx, LLxxxxxxxx, ...
+	if (preg_match('/^(?:PL|UU|LL|FL|RD|OL|UC)[a-zA-Z0-9_-]{10,}$/', $token, $m))
+		$pl_id = $m[0];
+	// ...playlist?list=ID  or  watch?v=…&list=ID
+	else if (preg_match('/[?&]list=([a-zA-Z0-9_-]{10,})/i', $token, $m))
+		$pl_id = $m[1];
+
+	if ($pl_id === '' || !preg_match('/^[a-zA-Z0-9_-]{10,}$/', $pl_id))
+		return pun_htmlspecialchars($token);
+
+	$safe_id = pun_htmlspecialchars($pl_id);
+	$safe_title = pun_htmlspecialchars($lang_common['YouTube playlist'] ?? 'YouTube playlist');
+
+	return '</p><div class="yt-embed"><div class="yt-pl-lazy" data-ytpl="'.$safe_id.'" role="button" tabindex="0" aria-label="'.$safe_title.'"><div class="yt-lazy-play" aria-hidden="true"></div><span class="yt-lazy-label">'.$safe_title.' — 24/7</span></div></div><p>';
+}
+
+
+//
+// JS helper that turns a clicked .yt-pl-lazy placeholder into a looping
+// 24/7 YouTube playlist player (IFrame Player API). Loads the API lazily
+// on first click, queues any placeholder clicked before the API is ready,
+// and re-cues on ENDED so a short playlist never stops.
+//
+function youtube_playlist_js()
+{
+	$js = <<<'JS'
+<script>
+(function(){
+	var apiReady=false, apiLoading=false, queue=[];
+	function flush(){ apiReady=true; while(queue.length){ makePlayer(queue.shift()); } }
+	window.onYouTubeIframeAPIReady=flush;
+	function loadAPI(){
+		if(apiLoading||apiReady)return;
+		apiLoading=true;
+		var t=document.createElement("script");
+		t.src="https://www.youtube.com/iframe_api";
+		document.head.appendChild(t);
+	}
+	function makePlayer(el){
+		var id=el.getAttribute("data-ytpl"); if(!id)return;
+		var holder=document.createElement("div");
+		el.parentNode.replaceChild(holder, el);
+		new YT.Player(holder, {
+			height:"100%", width:"100%",
+			playerVars:{ listType:"playlist", list:id, autoplay:1, mute:1, loop:1, rel:0, controls:1 },
+			events:{
+				onReady:function(e){ e.target.playVideo(); },
+				onStateChange:function(e){ if(e.data===YT.PlayerState.ENDED){ e.target.playVideo(); } }
+			}
+		});
+	}
+	function fire(t){ if(apiReady){ makePlayer(t); } else { queue.push(t); loadAPI(); } }
+	document.addEventListener("click",function(e){
+		var t=e.target.closest?e.target.closest(".yt-pl-lazy"):null;
+		if(t) fire(t);
+	});
+	document.addEventListener("keydown",function(e){
+		if(e.key!=="Enter"&&e.key!==" ")return;
+		var t=e.target.closest?e.target.closest(".yt-pl-lazy"):null;
+		if(t){ e.preventDefault(); fire(t); }
+	});
+})();
+</script>
+JS;
+	return $js;
+}
+
+
+//
 // Parse the contents of [list] bbcode
 //
 function handle_list_tag($content, $type = '*')
@@ -865,6 +946,12 @@ function do_bbcode($text, $is_signature = false)
 		// Tolerant: accepts a raw URL or one wrapped in [url]...[/url] etc.
 		$pattern_callback[] = '%\[youtube\].*?(https?://[^\s\[\]]+).*?\[/youtube\]%i';
 		$replace_callback[] = 'handle_youtube_tag($matches[1])';
+
+		// Looping 24/7 YouTube playlist. Accepts a bare PL… id or a
+		// playlist/watch URL with ?list=ID. XSS-safe: only a strict id
+		// is ever emitted into the data-ytpl attribute.
+		$pattern_callback[] = '%\[youtube-playlist\]\s*(.*?)\s*\[/youtube-playlist\]%is';
+		$replace_callback[] = 'handle_playlist_tag($matches[1])';
 	}
 
 	$pattern[] = '%\[b\](.*?)\[/b\]%ms';

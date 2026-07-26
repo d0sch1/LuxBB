@@ -148,9 +148,17 @@ if (defined('PUN_DEBUG'))
 // End the transaction
 $db->end_transaction();
 
-// YouTube click-to-load embed helper (injected once per page)
+// YouTube click-to-load embed helper (injected once per page).
+// parser.php is only required by BBCode-parsing pages; load it here so the
+// helpers exist on EVERY page (e.g. the homepage, which never parses BBCode).
+require_once PUN_ROOT.'include/parser.php';
+
 if (function_exists('youtube_lazy_js'))
 	echo youtube_lazy_js();
+
+// YouTube 24/7 playlist embed helper (injected once per page)
+if (function_exists('youtube_playlist_js'))
+	echo youtube_playlist_js();
 
 // Display executed queries (if enabled)
 if (defined('PUN_SHOW_QUERIES'))
