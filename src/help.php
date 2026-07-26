@@ -72,6 +72,14 @@ require PUN_ROOT.'header.php';
 		<p><code>[img=<?php echo $lang_help['FluxBB bbcode test'] ?>]<?php echo pun_htmlspecialchars(get_base_url(true)) ?>/img/test.png[/img]</code> <?php echo $lang_help['produces'] ?> <samp><img style="height: 21px" src="<?php echo pun_htmlspecialchars(get_base_url(true)) ?>/img/test.png" alt="<?php echo $lang_help['FluxBB bbcode test'] ?>" /></samp></p>
 	</div>
 </div>
+<h2><span><?php echo $lang_help['YouTube videos'] ?></span></h2>
+<div class="box">
+	<div class="inbox">
+		<p><a name="youtube"></a><?php echo $lang_help['YouTube info'] ?></p>
+		<p><code>[youtube]<?php echo $lang_help['YouTube bbcode test'] ?>[/youtube]</code> <?php echo $lang_help['produces'] ?></p>
+		<div class="postmsg"><div class="yt-embed"><iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div></div>
+	</div>
+</div>
 <h2><span><?php echo $lang_help['Quotes'] ?></span></h2>
 <div class="box">
 	<div class="inbox">

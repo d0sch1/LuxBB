@@ -28,6 +28,9 @@ $lang_help = array(
 'This help page'		=>	'This help page',
 'My email address'		=>	'My email address',
 'Images info'			=>	'If you want to display an image you can use the img tag. The text appearing after the "=" sign in the opening tag is used for the alt attribute and should be included whenever possible.',
+'YouTube videos'		=>	'YouTube videos',
+'YouTube info'			=>	'To embed a YouTube video, paste its URL inside a youtube tag. Only standard youtube.com, youtu.be and youtube-nocookie.com links are accepted.',
+'YouTube bbcode test'	=>	'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
 'FluxBB bbcode test'	=>	'FluxBB bbcode test',
 
 'Test topic'			=>	'Test topic',

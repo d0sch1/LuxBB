@@ -18,7 +18,7 @@ else
 fi
 # Real docker volume name (compose prefixes the project name "forum_" onto "forum-memes").
 MEME_VOLUME="forum_forum-memes"
-DB_CONTAINER="0d39f89e2adc_forum-db"
+DB_CONTAINER="forum-db"
 RETENTION_DAYS=14
 
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)

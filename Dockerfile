@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
         '    Header set X-Content-Type-Options "nosniff"' \
         '    Header set X-Frame-Options "SAMEORIGIN"' \
         '    Header set X-XSS-Protection "1; mode=block"' \
-        '    Header set Content-Security-Policy "default-src '\''self'\''; script-src '\''self'\'' '\''unsafe-inline'\'' '\''unsafe-eval'\''; style-src '\''self'\'' '\''unsafe-inline'\''; img-src '\''self'\'' data:; frame-ancestors '\''self'\'';"' \
+        '    Header set Content-Security-Policy "default-src '\''self'\''; script-src '\''self'\'' '\''unsafe-inline'\'' '\''unsafe-eval'\''; style-src '\''self'\'' '\''unsafe-inline'\''; img-src '\''self'\'' data:; frame-src '\''self'\'' https://www.youtube.com https://www.youtube-nocookie.com; frame-ancestors '\''self'\'';"' \
         '    <Location "/install.php">' \
         '        Require all denied' \
         '    </Location>' \

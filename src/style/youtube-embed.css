@@ -1,0 +1,20 @@
+/*****************************************************************
+YouTube [youtube] BBCode embed — responsive 16:9 wrapper
+Loaded globally via header.php so it applies to every theme.
+*****************************************************************/
+
+.yt-embed {
+	margin: 12px 0;
+	position: relative;
+	width: 100%;
+	padding-top: 56.25%; /* 16:9 aspect ratio */
+}
+
+.yt-embed iframe {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	border: 0;
+}

@@ -204,7 +204,7 @@ function preparse_tags($text, &$errors, $is_signature = false)
 	// Start off by making some arrays of bbcode tags and what we need to do with each one
 
 	// List of all the tags
-	$tags = array('quote', 'code', 'b', 'i', 'u', 's', 'ins', 'del', 'em', 'color', 'colour', 'url', 'email', 'img', 'list', '*', 'h', 'topic', 'post', 'forum', 'user');
+	$tags = array('quote', 'code', 'b', 'i', 'u', 's', 'ins', 'del', 'em', 'color', 'colour', 'url', 'email', 'img', 'youtube', 'list', '*', 'h', 'topic', 'post', 'forum', 'user');
 	// List of tags that we need to check are open (You could not put b,i,u in here then illegal nesting like [b][i][/b][/i] would be allowed)
 	$tags_opened = $tags;
 	// and tags we need to check are closed (the same as above, added it just in case)
@@ -216,13 +216,13 @@ function preparse_tags($text, &$errors, $is_signature = false)
 	// Tags not allowed
 	$tags_forbidden = array();
 	// Block tags, block tags can only go within another block tag, they cannot be in a normal tag
-	$tags_block = array('quote', 'code', 'list', 'h', '*');
+	$tags_block = array('quote', 'code', 'list', 'h', 'youtube', '*');
 	// Inline tags, we do not allow new lines in these
 	$tags_inline = array('b', 'i', 'u', 's', 'ins', 'del', 'em', 'color', 'colour', 'h', 'topic', 'post', 'forum', 'user');
 	// Tags we trim interior space
-	$tags_trim = array('img');
+	$tags_trim = array('img', 'youtube');
 	// Tags we remove quotes from the argument
-	$tags_quotes = array('url', 'email', 'img', 'topic', 'post', 'forum', 'user');
+	$tags_quotes = array('url', 'email', 'img', 'youtube', 'topic', 'post', 'forum', 'user');
 	// Tags we limit bbcode in
 	$tags_limit_bbcode = array(
 		'*' 	=> array('b', 'i', 'u', 's', 'ins', 'del', 'em', 'color', 'colour', 'url', 'email', 'list', 'img', 'code', 'topic', 'post', 'forum', 'user'),
@@ -732,6 +732,46 @@ function handle_img_tag($url, $is_signature = false, $alt = null)
 
 
 //
+// Turns a YouTube URL from the [youtube] tag into a responsive <iframe> embed.
+// Only official YouTube domains and a strict 11-char video id are accepted,
+// so no arbitrary HTML/JS can be injected through the tag (XSS-safe).
+//
+function handle_youtube_tag($url)
+{
+	$url = pun_trim($url);
+
+	// Parse only http(s) YouTube URLs; reject everything else.
+	if (!preg_match('%^https?://[^\s/]+%i', $url, $host_match))
+		return pun_htmlspecialchars($url);
+
+	$host = strtolower($host_match[0]);
+	$allowed = array('http://www.youtube.com', 'https://www.youtube.com', 'http://youtube.com', 'https://youtube.com', 'http://m.youtube.com', 'https://m.youtube.com', 'http://youtu.be', 'https://youtu.be', 'http://www.youtube-nocookie.com', 'https://www.youtube-nocookie.com');
+	if (!in_array($host, $allowed, true))
+		return pun_htmlspecialchars($url);
+
+	$video_id = '';
+
+	// youtu.be/VIDEOID
+	if (preg_match('%youtu\.be/([a-zA-Z0-9_-]{11})%i', $url, $m))
+		$video_id = $m[1];
+	// youtube.com/watch?v=VIDEOID
+	else if (preg_match('%[?&]v=([a-zA-Z0-9_-]{11})%i', $url, $m))
+		$video_id = $m[1];
+	// youtube.com/embed/VIDEOID  or  /shorts/VIDEOID  or  /v/VIDEOID
+	else if (preg_match('%/(?:embed|shorts|v)/([a-zA-Z0-9_-]{11})%i', $url, $m))
+		$video_id = $m[1];
+
+	// Reject anything that is not a clean 11-char YouTube id.
+	if ($video_id === '' || !preg_match('/^[a-zA-Z0-9_-]{11}$/', $video_id))
+		return pun_htmlspecialchars($url);
+
+	$safe_id = pun_htmlspecialchars($video_id);
+
+	return '</p><div class="yt-embed"><iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/'.$safe_id.'" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div><p>';
+}
+
+
+//
 // Parse the contents of [list] bbcode
 //
 function handle_list_tag($content, $type = '*')
@@ -777,6 +817,13 @@ function do_bbcode($text, $is_signature = false)
 	{
 		$pattern_callback[] = $re_list;
 		$replace_callback[] = 'handle_list_tag($matches[2], $matches[1])';
+	}
+
+	if (($is_signature && $pun_config['p_sig_img_tag'] == '1') || (!$is_signature && $pun_config['p_message_img_tag'] == '1'))
+	{
+		// YouTube embeds (only when image tags are enabled for this context)
+		$pattern_callback[] = '%\[youtube\]\s*([^\s\[\]]+?)\s*\[/youtube\]%';
+		$replace_callback[] = 'handle_youtube_tag($matches[1])';
 	}
 
 	$pattern[] = '%\[b\](.*?)\[/b\]%ms';
