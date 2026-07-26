@@ -59,7 +59,7 @@ if (isset($_POST['form_sent']))
 	// Make sure they got here from the site
 	confirm_referrer('edit.php');
 
-	// If it's a topic it must contain a subject
+	// Clean up message from POST
 	if ($can_edit_subject)
 	{
 		$subject = pun_trim($_POST['req_subject']);
@@ -118,6 +118,15 @@ if (isset($_POST['form_sent']))
 	// Did everything go according to plan?
 	if (empty($errors) && !isset($_POST['preview']))
 	{
+		// Handle image attachment (only now that validation passed).
+		require PUN_ROOT.'include/upload_img.php';
+		$attached_img_bbcode = pun_upload_meme('req_image', $errors);
+		if ($attached_img_bbcode !== false && $attached_img_bbcode !== '')
+		{
+			// Re-append the [img] tag to the (already validated) message.
+			$message .= "\n".$attached_img_bbcode;
+		}
+
 		$edited_sql = (!isset($_POST['silent']) || !$is_admmod) ? ', edited='.time().', edited_by=\''.$db->escape($pun_user['username']).'\'' : '';
 
 		require PUN_ROOT.'include/search_idx.php';
@@ -217,7 +226,7 @@ else if (isset($_POST['preview']))
 <div id="editform" class="blockform">
 	<h2><span><?php echo $lang_post['Edit post'] ?></span></h2>
 	<div class="box">
-		<form id="edit" method="post" action="edit.php?id=<?php echo $id ?>&amp;action=edit" onsubmit="return process_form(this)">
+		<form id="edit" method="post" action="edit.php?id=<?php echo $id ?>&amp;action=edit" enctype="multipart/form-data" onsubmit="return process_form(this)">
 			<div class="inform">
 				<fieldset>
 					<legend><?php echo $lang_post['Edit post legend'] ?></legend>
@@ -227,6 +236,9 @@ else if (isset($_POST['preview']))
 						<input class="longinput" type="text" name="req_subject" size="80" maxlength="70" tabindex="<?php echo $cur_index++ ?>" value="<?php echo pun_htmlspecialchars(isset($_POST['req_subject']) ? $_POST['req_subject'] : $cur_post['subject']) ?>" /><br /></label>
 <?php endif; ?>						<label class="required"><strong><?php echo $lang_common['Message'] ?> <span><?php echo $lang_common['Required'] ?></span></strong><br />
 						<textarea name="req_message" rows="20" cols="95" tabindex="<?php echo $cur_index++ ?>"><?php echo pun_htmlspecialchars(isset($_POST['req_message']) ? $message : $cur_post['message']) ?></textarea><br /></label>
+						<?php if (!$pun_user['is_guest']): ?>
+						<label class="conl"><strong><?php echo $lang_post['Attach image'] ?></strong><br /><input type="file" name="req_image" accept="image/png,image/jpeg,image/gif,image/webp" tabindex="<?php echo $cur_index++ ?>" /><br /><span class="clearerinfo"><?php echo $lang_post['Attach image info'] ?></span></label>
+						<?php endif; ?>
 						<ul class="bblinks">
 							<li><span><a href="help.php#bbcode" onclick="window.open(this.href); return false;"><?php echo $lang_common['BBCode'] ?></a> <?php echo ($pun_config['p_message_bbcode'] == '1') ? $lang_common['on'] : $lang_common['off']; ?></span></li>
 							<li><span><a href="help.php#url" onclick="window.open(this.href); return false;"><?php echo $lang_common['url tag'] ?></a> <?php echo ($pun_config['p_message_bbcode'] == '1' && $pun_user['g_post_links'] == '1') ? $lang_common['on'] : $lang_common['off']; ?></span></li>

@@ -61,7 +61,7 @@ if (isset($_POST['form_sent']))
 {
 	flux_hook('post_before_validation');
 
-	// Flood protection
+	// Clean up message from POST
 	if (!isset($_POST['preview']) && $pun_user['last_post'] != '' && (time() - $pun_user['last_post']) < $pun_user['g_post_flood'])
 		$errors[] = sprintf($lang_post['Flood start'], $pun_user['g_post_flood'], $pun_user['g_post_flood'] - (time() - $pun_user['last_post']));
 
@@ -168,6 +168,16 @@ if (isset($_POST['form_sent']))
 	// Did everything go according to plan?
 	if (empty($errors) && !isset($_POST['preview']))
 	{
+		// Handle image attachment (only now that validation passed, so a
+		// rejected post — flood, empty subject, etc. — leaves no orphaned file).
+		require PUN_ROOT.'include/upload_img.php';
+		$attached_img_bbcode = pun_upload_meme('req_image', $errors);
+		if ($attached_img_bbcode !== false && $attached_img_bbcode !== '')
+		{
+			// Re-append the [img] tag to the (already validated) message.
+			$message .= "\n".$attached_img_bbcode;
+		}
+
 		require PUN_ROOT.'include/search_idx.php';
 
 		// If it's a reply
@@ -455,7 +465,7 @@ if (isset($_POST['form_sent']))
 if ($tid)
 {
 	$action = $lang_post['Post a reply'];
-	$form = '<form id="post" method="post" action="post.php?action=post&amp;tid='.$tid.'" onsubmit="this.submit.disabled=true;if(process_form(this)){return true;}else{this.submit.disabled=false;return false;}">';
+	$form = '<form id="post" method="post" action="post.php?action=post&amp;tid='.$tid.'" enctype="multipart/form-data" onsubmit="this.submit.disabled=true;if(process_form(this)){return true;}else{this.submit.disabled=false;return false;}">';
 
 	// If a quote ID was specified in the url
 	if (isset($_GET['qid']))
@@ -535,7 +545,7 @@ if ($tid)
 else if ($fid)
 {
 	$action = $lang_post['Post new topic'];
-	$form = '<form id="post" method="post" action="post.php?action=post&amp;fid='.$fid.'" onsubmit="return process_form(this)">';
+	$form = '<form id="post" method="post" action="post.php?action=post&amp;fid='.$fid.'" enctype="multipart/form-data" onsubmit="return process_form(this)">';
 }
 else
 	message($lang_common['Bad request'], false, '404 Not Found');
@@ -655,6 +665,9 @@ if ($fid): ?>
 						<label class="required"><strong><?php echo $lang_common['Subject'] ?> <span><?php echo $lang_common['Required'] ?></span></strong><br /><input class="longinput" type="text" name="req_subject" value="<?php if (isset($_POST['req_subject'])) echo pun_htmlspecialchars($subject); ?>" size="80" maxlength="70" tabindex="<?php echo $cur_index++ ?>" /><br /></label>
 <?php endif; ?>						<label class="required"><strong><?php echo $lang_common['Message'] ?> <span><?php echo $lang_common['Required'] ?></span></strong><br />
 						<textarea name="req_message" rows="20" cols="95" tabindex="<?php echo $cur_index++ ?>"><?php echo isset($_POST['req_message']) ? pun_htmlspecialchars($orig_message) : (isset($quote) ? $quote : ''); ?></textarea><br /></label>
+						<?php if (!$pun_user['is_guest']): ?>
+						<label class="conl"><strong><?php echo $lang_post['Attach image'] ?></strong><br /><input type="file" name="req_image" accept="image/png,image/jpeg,image/gif,image/webp" tabindex="<?php echo $cur_index++ ?>" /><br /><span class="clearerinfo"><?php echo $lang_post['Attach image info'] ?></span></label>
+						<?php endif; ?>
 						<ul class="bblinks">
 							<li><span><a href="help.php#bbcode" onclick="window.open(this.href); return false;"><?php echo $lang_common['BBCode'] ?></a> <?php echo ($pun_config['p_message_bbcode'] == '1') ? $lang_common['on'] : $lang_common['off']; ?></span></li>
 							<li><span><a href="help.php#url" onclick="window.open(this.href); return false;"><?php echo $lang_common['url tag'] ?></a> <?php echo ($pun_config['p_message_bbcode'] == '1' && $pun_user['g_post_links'] == '1') ? $lang_common['on'] : $lang_common['off']; ?></span></li>

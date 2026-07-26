@@ -23,6 +23,14 @@ RUN apt-get update && apt-get install -y \
         '    <Location "/files/">' \
         '        Require all denied' \
         '    </Location>' \
+        '    <Directory "/var/www/html/img">' \
+        '        # Upload directories: never execute PHP, regardless of .htaccess.' \
+        '        <FilesMatch "\\.php$">' \
+        '            Require all denied' \
+        '        </FilesMatch>' \
+        '        php_flag engine off' \
+        '        AllowOverride None' \
+        '    </Directory>' \
         '    <FilesMatch "\\.(css|js|png|jpe?g|gif|ico|svg|woff2?|ttf|eot|webp)$">' \
         '        ExpiresActive On' \
         '        ExpiresDefault "access plus 1 week"' \
@@ -38,9 +46,9 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 RUN chown -R www-data:www-data /var/www/html \
     && find /var/www/html -type d -exec chmod 755 {} \; \
     && find /var/www/html -type f -exec chmod 644 {} \; \
-    && mkdir -p /var/www/html/cache /var/www/html/img/avatars \
-    && chown -R www-data:www-data /var/www/html/cache /var/www/html/img/avatars \
-    && chmod 770 /var/www/html/cache /var/www/html/img/avatars \
+    && mkdir -p /var/www/html/cache /var/www/html/img/avatars /var/www/html/img/memes \
+    && chown -R www-data:www-data /var/www/html/cache /var/www/html/img/avatars /var/www/html/img/memes \
+    && chmod 770 /var/www/html/cache /var/www/html/img/avatars /var/www/html/img/memes \
     && printf '%s\n' \
         'expose_php = Off' \
         'display_errors = Off' \

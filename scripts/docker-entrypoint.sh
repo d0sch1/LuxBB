@@ -77,5 +77,26 @@ HTEOF
 chown www-data:www-data "$AVATAR_DIR/.htaccess"
 chmod 644 "$AVATAR_DIR/.htaccess"
 
+# Same defense for the meme/image upload directory.
+MEME_DIR=/var/www/html/img/memes
+mkdir -p "$MEME_DIR"
+cat > "$MEME_DIR/.htaccess" <<'HTEOF'
+# Never execute PHP in the image upload directory.
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .pht
+RemoveType .php .phtml .php3 .php4 .php5 .php7 .pht
+php_flag engine off
+AddType text/plain .php .phtml .php3 .php4 .php5 .php7 .pht
+HTEOF
+chown www-data:www-data "$MEME_DIR/.htaccess"
+chmod 644 "$MEME_DIR/.htaccess"
+chown www-data:www-data "$MEME_DIR"
+chmod 770 "$MEME_DIR"
+
 # Hand off to the base image's Apache foreground process.
 exec apache2-foreground "$@"

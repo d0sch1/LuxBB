@@ -23,11 +23,13 @@ $lang_post = array(
 'Post a reply'		=>	'Post a reply',
 'Post new topic'	=>	'Post new topic',
 'Hide smilies'		=>	'Never show smilies as icons for this post',
-'Subscribe'			=>	'Subscribe to this topic',
+'Subscribe'		=>	'Subscribe to this topic',
 'Stay subscribed'	=>	'Stay subscribed to this topic',
 'Topic review'		=>	'Topic review (newest first)',
 'Flood start'		=>	'At least %s seconds have to pass between posts. Please wait %s seconds and try posting again.',
-'Preview'			=>	'Preview', // submit button to preview message
+'Preview'		=>	'Preview', // submit button to preview message
+'Attach image'		=>	'Attach image',
+'Attach image info'	=>	'PNG, JPG, GIF or WebP, max 5 MiB. The image is uploaded to this server and inserted as [img].',
 
 // Edit post
 'Edit post legend'	=>	'Edit the post and submit changes',
