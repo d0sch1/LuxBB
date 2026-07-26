@@ -768,12 +768,10 @@ function handle_youtube_tag($url)
 	$safe_id = pun_htmlspecialchars($video_id);
 	$safe_title = pun_htmlspecialchars($lang_common['YouTube video'] ?? 'YouTube video');
 
-	// Click-to-load placeholder: no third-party request until the user clicks.
+	// Click-to-load placeholder: single line (no newlines, so nl2br can't
+	// inject <br>/spaces). No third-party request until the user clicks.
 	// Dodges auto-load tracker blockers (uBlock / Firefox ETP). Privacy-friendly.
-	return '</p><div class="yt-embed yt-lazy" data-ytid="'.$safe_id.'" role="button" tabindex="0" aria-label="'.($safe_title).'">'."\n".
-		"	".'<div class="yt-lazy-play" aria-hidden="true"></div>'."\n".
-		"	".'<span class="yt-lazy-label">'.($safe_title).'</span>'."\n".
-		'</div><p>';
+	return '</p><div class="yt-embed yt-lazy" data-ytid="'.$safe_id.'" role="button" tabindex="0" aria-label="'.$safe_title.'"><div class="yt-lazy-play" aria-hidden="true"></div><span class="yt-lazy-label">'.$safe_title.'</span></div><p>';
 }
 
 
@@ -789,7 +787,7 @@ function youtube_lazy_js()
 	function loadYT(el){
 		var id=el.getAttribute("data-ytid");if(!id)return;
 		var f=document.createElement("iframe");
-		f.width="560";f.height="315";f.allowfullscreen=true;
+		f.allowfullscreen=true;
 		f.setAttribute("allow","accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share");
 		f.src="https://www.youtube-nocookie.com/embed/"+encodeURIComponent(id);
 		f.title="YouTube video player";
