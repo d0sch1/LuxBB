@@ -868,10 +868,21 @@ function youtube_playlist_js()
 		el.parentNode.replaceChild(holder, el);
 		new YT.Player(holder, {
 			height:"100%", width:"100%",
-			playerVars:{ listType:"playlist", list:id, autoplay:1, mute:1, loop:1, rel:0, controls:1 },
+			// Start a bare player; load the playlist explicitly in onReady.
+			// Passing list/loop/autoplay in playerVars makes YouTube return
+			// "Video unavailable" for some playlists, so we avoid that and
+			// use loadPlaylist() instead (documented, reliable path).
+			playerVars:{ rel:0, controls:1 },
 			events:{
-				onReady:function(e){ e.target.playVideo(); },
-				onStateChange:function(e){ if(e.data===YT.PlayerState.ENDED){ e.target.playVideo(); } }
+				onReady:function(e){
+					e.target.loadPlaylist({ list:id, listType:"playlist" });
+					e.target.playVideo();
+				},
+				onStateChange:function(e){
+					// A short playlist would otherwise stop at the end;
+					// re-cue so it runs 24/7 while the tab stays open.
+					if(e.data===YT.PlayerState.ENDED){ e.target.playVideo(); }
+				}
 			}
 		});
 	}
