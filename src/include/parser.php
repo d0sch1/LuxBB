@@ -821,8 +821,9 @@ function do_bbcode($text, $is_signature = false)
 
 	if (($is_signature && $pun_config['p_sig_img_tag'] == '1') || (!$is_signature && $pun_config['p_message_img_tag'] == '1'))
 	{
-		// YouTube embeds (only when image tags are enabled for this context)
-		$pattern_callback[] = '%\[youtube\]\s*([^\s\[\]]+?)\s*\[/youtube\]%';
+		// YouTube embeds (only when image tags are enabled for this context).
+		// Tolerant: accepts a raw URL or one wrapped in [url]...[/url] etc.
+		$pattern_callback[] = '%\[youtube\].*?(https?://[^\s\[\]]+).*?\[/youtube\]%i';
 		$replace_callback[] = 'handle_youtube_tag($matches[1])';
 	}
 
