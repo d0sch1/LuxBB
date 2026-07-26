@@ -766,8 +766,48 @@ function handle_youtube_tag($url)
 		return pun_htmlspecialchars($url);
 
 	$safe_id = pun_htmlspecialchars($video_id);
+	$safe_title = pun_htmlspecialchars($lang_common['YouTube video'] ?? 'YouTube video');
 
-	return '</p><div class="yt-embed"><iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/'.$safe_id.'" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div><p>';
+	// Click-to-load placeholder: no third-party request until the user clicks.
+	// Dodges auto-load tracker blockers (uBlock / Firefox ETP). Privacy-friendly.
+	return '</p><div class="yt-embed yt-lazy" data-ytid="'.$safe_id.'" role="button" tabindex="0" aria-label="'.($safe_title).'">'."\n".
+		"	".'<div class="yt-lazy-play" aria-hidden="true"></div>'."\n".
+		"	".'<span class="yt-lazy-label">'.($safe_title).'</span>'."\n".
+		'</div><p>';
+}
+
+
+//
+// JS helper that turns a clicked .yt-lazy placeholder into a real iframe.
+// Loaded once in the footer; uses event delegation so cached posts work.
+//
+function youtube_lazy_js()
+{
+	$js = <<<'JS'
+<script>
+(function(){
+	function loadYT(el){
+		var id=el.getAttribute("data-ytid");if(!id)return;
+		var f=document.createElement("iframe");
+		f.width="560";f.height="315";f.allowfullscreen=true;
+		f.setAttribute("allow","accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share");
+		f.src="https://www.youtube-nocookie.com/embed/"+encodeURIComponent(id);
+		f.title="YouTube video player";
+		el.parentNode.replaceChild(f,el);
+	}
+	document.addEventListener("click",function(e){
+		var t=e.target.closest?e.target.closest(".yt-lazy"):null;
+		if(t)loadYT(t);
+	});
+	document.addEventListener("keydown",function(e){
+		if(e.key!=="Enter"&&e.key!==" ")return;
+		var t=e.target.closest?e.target.closest(".yt-lazy"):null;
+		if(t){e.preventDefault();loadYT(t);}
+	});
+})();
+</script>
+JS;
+	return $js;
 }
 
 

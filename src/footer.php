@@ -148,6 +148,10 @@ if (defined('PUN_DEBUG'))
 // End the transaction
 $db->end_transaction();
 
+// YouTube click-to-load embed helper (injected once per page)
+if (function_exists('youtube_lazy_js'))
+	echo youtube_lazy_js();
+
 // Display executed queries (if enabled)
 if (defined('PUN_SHOW_QUERIES'))
 	display_saved_queries();
