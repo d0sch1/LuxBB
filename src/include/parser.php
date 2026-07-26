@@ -768,10 +768,12 @@ function handle_youtube_tag($url)
 	$safe_id = pun_htmlspecialchars($video_id);
 	$safe_title = pun_htmlspecialchars($lang_common['YouTube video'] ?? 'YouTube video');
 
-	// Click-to-load placeholder: single line (no newlines, so nl2br can't
-	// inject <br>/spaces). No third-party request until the user clicks.
-	// Dodges auto-load tracker blockers (uBlock / Firefox ETP). Privacy-friendly.
-	return '</p><div class="yt-embed yt-lazy" data-ytid="'.$safe_id.'" role="button" tabindex="0" aria-label="'.$safe_title.'"><div class="yt-lazy-play" aria-hidden="true"></div><span class="yt-lazy-label">'.$safe_title.'</span></div><p>';
+	// Click-to-load placeholder: a nested structure so the OUTER .yt-embed
+	// box owns the 16:9 height (aspect-ratio) while the INNER .yt-lazy div
+	// is absolutely positioned and filled with flex. This avoids the flex
+	// container collapsing the aspect-ratio (the old "tiny box" bug).
+	// No third-party request until the user clicks.
+	return '</p><div class="yt-embed"><div class="yt-lazy" data-ytid="'.$safe_id.'" role="button" tabindex="0" aria-label="'.$safe_title.'"><div class="yt-lazy-play" aria-hidden="true"></div><span class="yt-lazy-label">'.$safe_title.'</span></div></div><p>';
 }
 
 
