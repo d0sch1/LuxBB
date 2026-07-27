@@ -136,10 +136,12 @@ if (isset($_POST['form_sent']))
 	else if ($pun_config['p_message_all_caps'] == '0' && is_all_uppercase($message) && !$pun_user['is_admmod'])
 		$errors[] = $lang_post['All caps message'];
 
-	// Validate BBCode syntax
+	// Validate BBCode syntax. parser.php is already loaded unconditionally at
+	// the top of this file; use require_once so a stale OPcache copy of this
+	// branch cannot re-include it and fatal on "Cannot redeclare".
 	if ($pun_config['p_message_bbcode'] == '1')
 	{
-		require PUN_ROOT.'include/parser.php';
+		require_once PUN_ROOT.'include/parser.php';
 		$message = preparse_bbcode($message, $errors);
 	}
 
