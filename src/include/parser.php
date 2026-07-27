@@ -59,6 +59,53 @@ $smilies = array(
 	':rolleyes:' => 'roll.png',
 	':cool:' => 'cool.png');
 
+// Twitch / 7TV / FFZ emotes (self-hosted under img/smilies/twitch/).
+// Keys use :Name: syntax to avoid clashing with normal words.
+// Values: 'file.png:WxH' so the renderer can size them correctly.
+// NOTE: this list is kept in sync with the actual PNGs present in
+// img/smilies/twitch/ (generated from the download manifest).
+$twitch_emotes = array(
+	':Kappa:' => 'Kappa.png:28x28',
+	':PogChamp:' => 'PogChamp.png:28x28',
+	':LUL:' => 'LUL.png:28x28',
+	':monkaS:' => 'monkaS.png:28x28',
+	':PepeHands:' => 'PepeHands.png:28x28',
+	':BibleThump:' => 'BibleThump.png:28x28',
+	':OMEGALUL:' => 'OMEGALUL.png:28x28',
+	':PJSalt:' => 'PJSalt.png:28x28',
+	':ResidentSleeper:' => 'ResidentSleeper.png:28x28',
+	':DansGame:' => 'DansGame.png:28x28',
+	':4Head:' => '4Head.png:28x28',
+	':SwiftRage:' => 'SwiftRage.png:28x28',
+	':Kreygasm:' => 'Kreygasm.png:28x28',
+	':NotLikeThis:' => 'NotLikeThis.png:28x28',
+	':EleGiggles:' => 'EleGiggles.png:28x28',
+	':CoolStoryBob:' => 'CoolStoryBob.png:28x28',
+	':SadCat:' => 'SadCat.png:28x28',
+	':Doge:' => 'Doge.png:28x28',
+	':CoolCat:' => 'CoolCat.png:28x28',
+	':TriHard:' => 'TriHard.png:28x28',
+	':SSSsss:' => 'SSSsss.png:28x28',
+	':WutFace:' => 'WutFace.png:28x28',
+	':BloodTrail:' => 'BloodTrail.png:28x28',
+	':PipeHype:' => 'PipeHype.png:28x28',
+	':VoteNay:' => 'VoteNay.png:28x28',
+	':OverRustle:' => 'OverRustle.png:28x28',
+	':FailFish:' => 'FailFish.png:28x28',
+	':KappaPride:' => 'KappaPride.png:28x28',
+	':Keepo:' => 'Keepo.png:28x28',
+	':DendiFace:' => 'DendiFace.png:28x28',
+	':GabeN:' => 'GabeN.png:28x28',
+	':MingLee:' => 'MingLee.png:28x28',
+	':OhMyDog:' => 'OhMyDog.png:28x28',
+	':SeemsGood:' => 'SeemsGood.png:28x28',
+	':mcaT:' => 'mcaT.png:28x28',
+	':RainTime:' => 'RainTime.png:28x28',
+	':PETPET:' => 'PETPET.png:28x28',
+	':Clap:' => 'Clap.png:28x28',
+	':Clap2:' => 'Clap2.png:28x28',
+	':ppL:' => 'ppL.png:9x9');
+
 //
 // Make sure all BBCodes are lower case and do a little cleanup
 //
@@ -1111,7 +1158,7 @@ function forum_array_key($arr, $key)
 //
 function do_smilies($text)
 {
-	global $smilies;
+	global $smilies, $twitch_emotes;
 
 	$text = ' '.$text.' ';
 
@@ -1119,6 +1166,25 @@ function do_smilies($text)
 	{
 		if (strpos($text, $smiley_text) !== false)
 			$text = ucp_preg_replace('%(?<=[>\s])'.preg_quote($smiley_text, '%').'(?=[^\p{L}\p{N}])%um', '<img src="'.pun_htmlspecialchars(get_base_url(true).'/img/smilies/'.$smiley_img).'" width="15" height="15" alt="'.substr($smiley_img, 0, strrpos($smiley_img, '.')).'" />', $text);
+	}
+
+	// Twitch / 7TV / FFZ emotes (self-hosted). Keys are :Name: so they only
+	// match on word boundaries, and carry their own dimensions (file:WxH).
+	if (!empty($twitch_emotes))
+	{
+		foreach ($twitch_emotes as $smiley_text => $smiley_spec)
+		{
+			if (strpos($text, $smiley_text) === false)
+				continue;
+
+			list($smiley_img, $dims) = explode(':', $smiley_spec);
+			if (strpos($dims, 'x') !== false)
+				list($w, $h) = explode('x', $dims);
+			else
+				{ $w = 28; $h = 28; }
+
+			$text = ucp_preg_replace('%(?<=[>\s])'.preg_quote($smiley_text, '%').'(?=[^\p{L}\p{N}])%um', '<img src="'.pun_htmlspecialchars(get_base_url(true).'/img/smilies/twitch/'.$smiley_img).'" width="'.$w.'" height="'.$h.'" alt="'.substr($smiley_img, 0, strrpos($smiley_img, '.')).'" />', $text);
+		}
 	}
 
 	return substr($text, 1, -1);
