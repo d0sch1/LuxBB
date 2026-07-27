@@ -8,6 +8,9 @@
 
 define('PUN_ROOT', dirname(__FILE__).'/');
 require PUN_ROOT.'include/common.php';
+// Load parser.php unconditionally so $smilies / $twitch_emotes are available
+// both when rendering the post form (smiley/emote picker) and on submit.
+require_once PUN_ROOT.'include/parser.php';
 
 
 if ($pun_user['g_read_board'] == '0')
@@ -693,25 +696,24 @@ if ($fid): ?>
 								?>
 																		<div class="emote-bar">
 																			<span class="emote-bar-label"><?php echo $lang_common['Smilies'] ?>:</span>
-												<?php echo emote_picker_build($smilies, '', '15x15'); ?>
-																		</div>
-												<?php if (!empty($twitch_emotes)): ?>
-																		<div class="emote-bar emote-bar-twitch">
-																			<span class="emote-bar-label">Twitch:</span>
-												<?php echo emote_picker_build($twitch_emotes, 'twitch', '28x28'); ?>
+																		<?php echo emote_picker_build($GLOBALS['smilies'], '', '15x15'); ?>
+																														</div>
+																		<?php if (!empty($GLOBALS['twitch_emotes'])): ?>
+																														<div class="emote-bar emote-bar-twitch">
+																															<span class="emote-bar-label">Twitch:</span>
+																		<?php echo emote_picker_build($GLOBALS['twitch_emotes'], 'twitch', '28x28'); ?>
 																		</div>
 												<?php endif; ?>
 																		<textarea id="req_message" name="req_message" rows="20" cols="95" tabindex="<?php echo $cur_index++ ?>"><?php echo isset($_POST['req_message']) ? pun_htmlspecialchars($orig_message) : (isset($quote) ? $quote : ''); ?></textarea><br /></label>
 												<script type="text/javascript">
 												(function () {
-													var bar = document.querySelector('.emote-bar');
-													if (!bar) return;
-													bar.addEventListener('click', function (e) {
-														var a = e.target;
-														while (a && a.nodeName !== 'A') a = a.parentNode;
-														if (!a || !a.getAttribute('data-token')) return;
+													document.addEventListener('click', function (e) {
+														var a = e.target.closest ? e.target.closest('a.emote-pick') : null;
+														if (!a) return;
 														e.preventDefault();
-														var token = a.getAttribute('data-token') + ' ';
+														var token = a.getAttribute('data-token');
+														if (!token) return;
+														token = token + ' ';
 														var ta = document.getElementById('req_message');
 														if (!ta) return;
 														if (typeof ta.selectionStart !== 'undefined') {
