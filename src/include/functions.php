@@ -243,6 +243,19 @@ function get_base_url($support_https = false)
 	elseif (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) != 'off')
 		$protocol = 'https';
 
+	// Preserve the non-standard port. HTTP_HOST already includes it when the
+	// client used one (e.g. 192.168.178.129:8081); when we fall back to
+	// o_base_url we must re-attach the port ourselves or image/asset URLs
+	// (smilies, emotes, avatars) silently point at the wrong port and 404.
+	if (strpos($host, ':') === false)
+	{
+		$port = (!empty($_SERVER['HTTP_HOST']) && strpos($_SERVER['HTTP_HOST'], ':') !== false)
+			? parse_url('http://'.$_SERVER['HTTP_HOST'], PHP_URL_PORT)
+			: parse_url($pun_config['o_base_url'], PHP_URL_PORT);
+		if (!empty($port) && (int)$port !== ($protocol === 'https' ? 443 : 80))
+			$host .= ':'.$port;
+	}
+
 	if (!$support_https)
 		return $protocol.'://'.$host;
 
