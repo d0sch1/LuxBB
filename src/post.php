@@ -663,8 +663,72 @@ if ($pun_user['is_guest'])
 
 if ($fid): ?>
 						<label class="required"><strong><?php echo $lang_common['Subject'] ?> <span><?php echo $lang_common['Required'] ?></span></strong><br /><input class="longinput" type="text" name="req_subject" value="<?php if (isset($_POST['req_subject'])) echo pun_htmlspecialchars($subject); ?>" size="80" maxlength="70" tabindex="<?php echo $cur_index++ ?>" /><br /></label>
-<?php endif; ?>						<label class="required"><strong><?php echo $lang_common['Message'] ?> <span><?php echo $lang_common['Required'] ?></span></strong><br />
-						<textarea name="req_message" rows="20" cols="95" tabindex="<?php echo $cur_index++ ?>"><?php echo isset($_POST['req_message']) ? pun_htmlspecialchars($orig_message) : (isset($quote) ? $quote : ''); ?></textarea><br /></label>
+<?php endif; ?>						<?php
+
+						// Smiley / emote picker bar. Clicking inserts the token at the cursor.
+						function emote_picker_build($map, $subdir, $default_size)
+						{
+							$out = '';
+							foreach ($map as $token => $spec)
+							{
+								if (strpos($spec, ':') !== false)
+									list($img, $dims) = explode(':', $spec);
+								else
+									{ $img = $spec; $dims = $default_size; }
+
+								if (strpos($dims, 'x') !== false)
+									list($w, $h) = explode('x', $dims);
+								else
+									{ $w = 15; $h = 15; }
+
+								$src = pun_htmlspecialchars(get_base_url(true)).'/img/smilies/'.($subdir ? $subdir.'/' : '').$img;
+								$alt = pun_htmlspecialchars($token);
+								$dtok = pun_htmlspecialchars($token);
+								$out .= "							".'<a class="emote-pick" href="javascript:void(0)" data-token="'.$dtok.'" title="'.$alt.'"><img src="'.$src.'" width="'.$w.'" height="'.$h.'" alt="'.$alt.'" /></a>'."\n";
+								}
+
+								return $out;
+								}
+
+								?>
+																		<div class="emote-bar">
+																			<span class="emote-bar-label"><?php echo $lang_common['Smilies'] ?>:</span>
+												<?php echo emote_picker_build($smilies, '', '15x15'); ?>
+																		</div>
+												<?php if (!empty($twitch_emotes)): ?>
+																		<div class="emote-bar emote-bar-twitch">
+																			<span class="emote-bar-label">Twitch:</span>
+												<?php echo emote_picker_build($twitch_emotes, 'twitch', '28x28'); ?>
+																		</div>
+												<?php endif; ?>
+																		<textarea id="req_message" name="req_message" rows="20" cols="95" tabindex="<?php echo $cur_index++ ?>"><?php echo isset($_POST['req_message']) ? pun_htmlspecialchars($orig_message) : (isset($quote) ? $quote : ''); ?></textarea><br /></label>
+												<script type="text/javascript">
+												(function () {
+													var bar = document.querySelector('.emote-bar');
+													if (!bar) return;
+													bar.addEventListener('click', function (e) {
+														var a = e.target;
+														while (a && a.nodeName !== 'A') a = a.parentNode;
+														if (!a || !a.getAttribute('data-token')) return;
+														e.preventDefault();
+														var token = a.getAttribute('data-token') + ' ';
+														var ta = document.getElementById('req_message');
+														if (!ta) return;
+														if (typeof ta.selectionStart !== 'undefined') {
+															var s = ta.selectionStart, en = ta.selectionEnd;
+															ta.value = ta.value.substring(0, s) + token + ta.value.substring(en);
+															ta.selectionStart = ta.selectionEnd = s + token.length;
+														} else if (document.selection && document.selection.createRange) {
+															ta.focus();
+															var r = document.selection.createRange();
+															r.text = token;
+														} else {
+															ta.value += token;
+														}
+														ta.focus();
+													});
+												})();
+												</script>
 						<?php if (!$pun_user['is_guest']): ?>
 						<label class="conl"><strong><?php echo $lang_post['Attach image'] ?></strong><br /><input type="file" name="req_image" accept="image/png,image/jpeg,image/gif,image/webp" tabindex="<?php echo $cur_index++ ?>" /><br /><span class="clearerinfo"><?php echo $lang_post['Attach image info'] ?></span></label>
 						<?php endif; ?>

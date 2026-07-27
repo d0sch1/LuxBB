@@ -1148,3 +1148,11 @@ body {
 .pun .inew .icon {
 	border-color: #5496d8 #4b85c0 #4377ac #4f8dcb
 	}
+
+
+/* Twitch / smiley picker bar (post.php) */
+.emote-bar { margin: 4px 0 8px 0; line-height: 1.8; }
+.emote-bar-label { font-weight: bold; margin-right: 6px; color: #555; }
+.emote-bar a.emote-pick { display: inline-block; margin: 0 2px; vertical-align: middle; border: 0; text-decoration: none; }
+.emote-bar a.emote-pick img { vertical-align: middle; border: 0; }
+.emote-bar a.emote-pick:hover { opacity: 0.75; }
