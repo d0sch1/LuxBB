@@ -1,0 +1,18 @@
+/var/log/apache2/access.log
+/var/log/apache2/error.log
+/var/log/apache2/other_vhosts_access.log
+{
+    su www-data www-data
+    daily
+    missingok
+    rotate 14
+    compress
+    delaycompress
+    notifempty
+    create 0644 www-data www-data
+    sharedscripts
+    postrotate
+        # signal Apache to reopen log files (graceful reopen, no session drop)
+        if apache2ctl -k graceful 2>/dev/null; then :; fi
+    endscript
+}
