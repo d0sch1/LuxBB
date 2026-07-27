@@ -738,7 +738,11 @@ function handle_img_tag($url, $is_signature = false, $alt = null)
 //
 function handle_youtube_tag($url)
 {
+	global $lang_common;
+
 	$url = pun_trim($url);
+
+	$video_id = '';
 
 	// Parse only http(s) YouTube URLs; reject everything else.
 	if (!preg_match('%^https?://[^\s/]+%i', $url, $host_match))
@@ -820,6 +824,8 @@ JS;
 //
 function handle_playlist_tag($token)
 {
+	global $lang_common;
+
 	$token = pun_trim($token);
 
 	$pl_id = '';
@@ -866,25 +872,60 @@ function youtube_playlist_js()
 		var id=el.getAttribute("data-ytpl"); if(!id)return;
 		var holder=document.createElement("div");
 		el.parentNode.replaceChild(holder, el);
-		new YT.Player(holder, {
-			height:"100%", width:"100%",
-			// Start a bare player; load the playlist explicitly in onReady.
-			// Passing list/loop/autoplay in playerVars makes YouTube return
-			// "Video unavailable" for some playlists, so we avoid that and
-			// use loadPlaylist() instead (documented, reliable path).
-			playerVars:{ rel:0, controls:1 },
-			events:{
-				onReady:function(e){
-					e.target.loadPlaylist({ list:id, listType:"playlist" });
-					e.target.playVideo();
-				},
-				onStateChange:function(e){
-					// A short playlist would otherwise stop at the end;
-					// re-cue so it runs 24/7 while the tab stays open.
-					if(e.data===YT.PlayerState.ENDED){ e.target.playVideo(); }
+		var started=false, errored=false;
+		function showErr(msg){
+			if(errored) return;            // only show once
+			errored=true;
+			var box=document.createElement("div");
+			box.className="yt-err";
+			box.setAttribute("role","alert");
+			box.innerHTML='<strong>Playlist nicht verfügbar</strong>'
+				+'<span>Diese Playlist kann von YouTube nicht abgespielt werden'
+				+' (gelöscht, privat, gesperrt oder alle Tracks unverfügbar).</span>'
+				+'<code>'+id+'</code>';
+			holder.parentNode.replaceChild(box, holder);
+		}
+		// Some playlist failures (e.g. all tracks copyright-blocked) make
+		// YouTube show "An error occurred. Please try again later." inside
+		// the iframe WITHOUT firing onError. We catch that with a watchdog:
+		// if nothing actually started within 9s, show the readable box.
+		var watchdog=setTimeout(function(){ if(!started) showErr(); }, 9000);
+		try {
+			new YT.Player(holder, {
+				height:"100%", width:"100%",
+				// Start a bare player; load the playlist explicitly in onReady.
+				// Passing list/loop/autoplay in playerVars makes YouTube return
+				// "Video unavailable" for some playlists, so we avoid that and
+				// use loadPlaylist() instead (documented, reliable path).
+				playerVars:{ rel:0, controls:1 },
+				events:{
+					onReady:function(e){
+						e.target.loadPlaylist({ list:id, listType:"playlist" });
+						e.target.playVideo();
+					},
+					onStateChange:function(e){
+						// YT.PlayerState: -1 unstarted, 0 ended, 1 playing,
+						// 2 paused, 3 buffering, 5 cued.
+						// Any real playback (playing/buffering/cued) means the
+						// playlist loaded fine — cancel the watchdog.
+						if(e.data===1 || e.data===3 || e.data===5){ started=true; clearTimeout(watchdog); }
+						// A short playlist would otherwise stop at the end;
+						// re-cue so it runs 24/7 while the tab stays open.
+						if(e.data===YT.PlayerState.ENDED){ e.target.playVideo(); }
+					},
+					onError:function(e){
+						// 2=invalid param, 5=html5 error, 100=private/deleted/
+						// not found, 101/150=embedding disabled. All map to our
+						// readable box instead of YouTube's raw error overlay.
+						clearTimeout(watchdog);
+						showErr();
+					}
 				}
-			}
-		});
+			});
+		} catch(err) {
+			clearTimeout(watchdog);
+			showErr();
+		}
 	}
 	function fire(t){ if(apiReady){ makePlayer(t); } else { queue.push(t); loadAPI(); } }
 	document.addEventListener("click",function(e){
