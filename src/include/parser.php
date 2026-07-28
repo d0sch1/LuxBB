@@ -842,7 +842,8 @@ function youtube_lazy_js()
 		var f=document.createElement("iframe");
 		f.allowfullscreen=true;
 		f.setAttribute("allow","accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share");
-		f.src="https://www.youtube-nocookie.com/embed/"+encodeURIComponent(id);
+		f.src="https://www.youtube.com/embed/"+encodeURIComponent(id);
+		f.setAttribute("referrerpolicy","strict-origin-when-cross-origin");
 		f.title="YouTube video player";
 		el.parentNode.replaceChild(f,el);
 	}
@@ -918,7 +919,8 @@ function youtube_playlist_js()
 		var f=document.createElement("iframe");
 		f.allowfullscreen=true;
 		f.setAttribute("allow","accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share");
-		f.src="https://www.youtube-nocookie.com/embed/?listType=playlist&list="+encodeURIComponent(id)+"&loop=1&rel=0&controls=1";
+		f.src="https://www.youtube.com/embed/?listType=playlist&list="+encodeURIComponent(id)+"&loop=1&rel=0&controls=1";
+		f.setAttribute("referrerpolicy","strict-origin-when-cross-origin");
 		f.title="YouTube playlist player";
 		el.parentNode.replaceChild(f,el);
 	}
