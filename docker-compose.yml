@@ -35,7 +35,11 @@ services:
     healthcheck:
       # config.php is built at runtime by the entrypoint, so the forum needs a
       # few seconds after boot before it answers. start_period covers that.
-      test: ["CMD", "curl", "-f", "-s", "http://localhost:80/"]
+      # We hit /healthcheck.php (not /) because the boards are intentionally
+      # guest-restricted: curl -f / as a guest returns 403 and would mark the
+      # container unhealthy even though it is fully working. healthcheck.php
+      # boots the real FluxBB stack (config + DB + session) and always 200s.
+      test: ["CMD", "curl", "-f", "-s", "http://localhost:80/healthcheck.php"]
       interval: 30s
       timeout: 5s
       retries: 3
