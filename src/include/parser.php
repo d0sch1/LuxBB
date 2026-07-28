@@ -902,87 +902,34 @@ function handle_playlist_tag($token)
 //
 function youtube_playlist_js()
 {
+	// Direct iframe embed for playlists — NO external IFrame API required.
+	// The old version loaded https://www.youtube-nocookie.com/iframe_api and
+	// built the player via the YT JS API; that external script is blocked by
+	// Firefox Enhanced Tracking Protection / tracker-blockers / some networks,
+	// which left the .yt-pl-lazy placeholder frozen and unclickable. Loading
+	// the playlist straight into a nocookie <iframe> makes the click work
+	// without any third-party script and is the documented, reliable path.
+	// 24/7 behaviour is preserved via listType=playlist + loop=1.
 	$js = <<<'JS'
 <script>
 (function(){
-	var apiReady=false, apiLoading=false, queue=[];
-	function flush(){ apiReady=true; while(queue.length){ makePlayer(queue.shift()); } }
-	window.onYouTubeIframeAPIReady=flush;
-	function loadAPI(){
-		if(apiLoading||apiReady)return;
-		apiLoading=true;
-		var t=document.createElement("script");
-		t.src="https://www.youtube.com/iframe_api";
-		document.head.appendChild(t);
-	}
-	function makePlayer(el){
+	function loadPL(el){
 		var id=el.getAttribute("data-ytpl"); if(!id)return;
-		var holder=document.createElement("div");
-		el.parentNode.replaceChild(holder, el);
-		var started=false, errored=false;
-		function showErr(msg){
-			if(errored) return;            // only show once
-			errored=true;
-			var box=document.createElement("div");
-			box.className="yt-err";
-			box.setAttribute("role","alert");
-			box.innerHTML='<strong>Playlist nicht verfügbar</strong>'
-				+'<span>Diese Playlist kann von YouTube nicht abgespielt werden'
-				+' (gelöscht, privat, gesperrt oder alle Tracks unverfügbar).</span>'
-				+'<code>'+id+'</code>';
-			holder.parentNode.replaceChild(box, holder);
-		}
-		// Some playlist failures (e.g. all tracks copyright-blocked) make
-		// YouTube show "An error occurred. Please try again later." inside
-		// the iframe WITHOUT firing onError. We catch that with a watchdog:
-		// if nothing actually started within 9s, show the readable box.
-		var watchdog=setTimeout(function(){ if(!started) showErr(); }, 9000);
-		try {
-			new YT.Player(holder, {
-				height:"100%", width:"100%",
-				// Start a bare player; load the playlist explicitly in onReady.
-				// Passing list/loop/autoplay in playerVars makes YouTube return
-				// "Video unavailable" for some playlists, so we avoid that and
-				// use loadPlaylist() instead (documented, reliable path).
-				playerVars:{ rel:0, controls:1 },
-				events:{
-					onReady:function(e){
-						e.target.loadPlaylist({ list:id, listType:"playlist" });
-						e.target.playVideo();
-					},
-					onStateChange:function(e){
-						// YT.PlayerState: -1 unstarted, 0 ended, 1 playing,
-						// 2 paused, 3 buffering, 5 cued.
-						// Any real playback (playing/buffering/cued) means the
-						// playlist loaded fine — cancel the watchdog.
-						if(e.data===1 || e.data===3 || e.data===5){ started=true; clearTimeout(watchdog); }
-						// A short playlist would otherwise stop at the end;
-						// re-cue so it runs 24/7 while the tab stays open.
-						if(e.data===YT.PlayerState.ENDED){ e.target.playVideo(); }
-					},
-					onError:function(e){
-						// 2=invalid param, 5=html5 error, 100=private/deleted/
-						// not found, 101/150=embedding disabled. All map to our
-						// readable box instead of YouTube's raw error overlay.
-						clearTimeout(watchdog);
-						showErr();
-					}
-				}
-			});
-		} catch(err) {
-			clearTimeout(watchdog);
-			showErr();
-		}
+		var f=document.createElement("iframe");
+		f.allowfullscreen=true;
+		f.setAttribute("allow","accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share");
+		f.src="https://www.youtube-nocookie.com/embed/?listType=playlist&list="+encodeURIComponent(id)+"&loop=1&rel=0&controls=1";
+		f.title="YouTube playlist player";
+		el.parentNode.replaceChild(f,el);
 	}
-	function fire(t){ if(apiReady){ makePlayer(t); } else { queue.push(t); loadAPI(); } }
 	document.addEventListener("click",function(e){
 		var t=e.target.closest?e.target.closest(".yt-pl-lazy"):null;
-		if(t) fire(t);
+		if(t) loadPL(t);
 	});
 	document.addEventListener("keydown",function(e){
 		if(e.key!=="Enter"&&e.key!==" ")return;
 		var t=e.target.closest?e.target.closest(".yt-pl-lazy"):null;
-		if(t){ e.preventDefault(); fire(t); }
+		if(t){ e.preventDefault(); loadPL(t); }
 	});
 })();
 </script>
